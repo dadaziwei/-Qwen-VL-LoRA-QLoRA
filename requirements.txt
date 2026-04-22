@@ -1,0 +1,18 @@
+# 基础训练、量化与 API 服务依赖；vLLM 单独放在 requirements-vllm.txt，便于 Windows 本地安装。
+accelerate>=0.34.0
+autoawq>=0.2.6
+bitsandbytes>=0.43.3
+datasets>=2.20.0
+fastapi>=0.112.0
+httpx>=0.27.0
+peft>=0.12.0
+pillow>=10.4.0
+python-dotenv>=1.0.1
+qwen-vl-utils>=0.0.8
+sentencepiece>=0.2.0
+sse-starlette>=2.1.3
+torch>=2.3.0
+transformers>=4.49.0
+trl>=0.12.0
+uvicorn[standard]>=0.30.0
+pyyaml>=6.0.2

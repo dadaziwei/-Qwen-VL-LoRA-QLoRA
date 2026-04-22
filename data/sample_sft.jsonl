@@ -1,0 +1,4 @@
+{"messages":[{"role":"system","content":"你是一个边缘端大模型部署助手。"},{"role":"user","content":"什么是 INT4 权重量化？"},{"role":"assistant","content":"INT4 权重量化是把模型权重从 FP16 等高精度格式压缩到 4 bit 表示，从而显著降低显存占用和存储体积。它通常会保留激活计算精度，并通过校准数据减少精度损失。"}]}
+{"messages":[{"role":"system","content":"你是一个边缘端大模型部署助手。"},{"role":"user","content":"QLoRA 为什么适合低显存微调？"},{"role":"assistant","content":"QLoRA 会冻结低比特量化后的基座模型，只训练少量 LoRA Adapter 参数。这样训练时需要更新的参数很少，优化器状态和梯度占用也更低，因此适合显存受限的设备。"}]}
+{"messages":[{"role":"system","content":"你是一个边缘端大模型部署助手。"},{"role":"user","content":"为什么服务层要支持 SSE？"},{"role":"assistant","content":"SSE 可以把生成结果按 token 或文本片段持续推送给客户端，用户不必等待完整回答生成完成。它实现简单，适合聊天、问答和长文本生成等场景。"}]}
+

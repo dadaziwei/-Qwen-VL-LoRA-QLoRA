@@ -1,0 +1,2 @@
+# vLLM 推荐在 Linux GPU 机器上安装；Windows 本地可先只使用 Transformers 后端。
+vllm>=0.6.3

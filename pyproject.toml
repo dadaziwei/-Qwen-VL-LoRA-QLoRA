@@ -1,0 +1,13 @@
+# 让 src/edge_qwen 可以通过 pip install -e . 被 uvicorn 正常发现。
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edge-qwen"
+version = "0.1.0"
+description = "Qwen AWQ/QLoRA edge deployment with FastAPI SSE and optional vLLM backend."
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]

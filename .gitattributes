@@ -1,0 +1,12 @@
+# 统一文本文件换行，避免 Linux shell 脚本被 CRLF 破坏。
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.jsonl text eol=lf
+*.toml text eol=lf
+*.txt text eol=lf
+*.ps1 text eol=crlf
+

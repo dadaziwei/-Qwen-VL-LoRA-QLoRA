@@ -1,0 +1,30 @@
+# 8GB 显存本地训练配置：优先跑通 QLoRA 文本 SFT 闭环。
+model_name: Qwen/Qwen2.5-0.5B-Instruct
+output_dir: outputs/qwen-lora-local
+# 低显存下先限制上下文长度，避免 KV/激活占用过高。
+max_seq_length: 512
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+num_train_epochs: 1
+learning_rate: 0.0002
+logging_steps: 5
+save_steps: 50
+lora:
+  # rank 越大表达能力越强，但显存和训练时间也会上升。
+  r: 8
+  alpha: 16
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+quantization:
+  # NF4 是 QLoRA 常用 4bit 训练格式。
+  load_in_4bit: true
+  bnb_4bit_quant_type: nf4
+  bnb_4bit_compute_dtype: bfloat16
+  bnb_4bit_use_double_quant: true
