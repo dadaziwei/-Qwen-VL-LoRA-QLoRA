@@ -1,22 +1,22 @@
-# 项目教程总览
+# 教程总览
 
-本目录是 `Edge Qwen QLoRA + AWQ + FastAPI` 的完整中文教程，目标是让你在 8GB 显存机器上先跑通可展示闭环，再把更重的训练和并发推理迁移到远程 GPU。
+这份教程是按“我真的要把这个项目做出来”的顺序写的，不是把命令简单排一下。每一章都会尽量说明：为什么要这么做、这个选择解决了什么问题、如果换到更强的机器上该怎么扩展。
 
-## 学习路线
+我把 8GB 显卡作为教程基准，是因为它有代表性。很多刚开始做大模型部署的人，设备并不是服务器，而是自己电脑里一张 8GB 显卡。用这样的配置做项目，能逼着我们认真理解量化、Adapter、上下文长度、服务抽象这些真正重要的东西，而不是简单依赖硬件把问题盖过去。
 
-建议按下面顺序阅读和执行：
+## 阅读顺序
 
-1. [环境准备](./01_environment.md)：安装 Python 环境、依赖、CUDA/显卡检查和 Hugging Face 下载建议。
-2. [本地 AWQ 推理服务](./02_local_inference.md)：使用 Transformers 后端启动 FastAPI，并通过 SSE 流式返回结果。
-3. [QLoRA 轻量微调](./03_qlora_finetune.md)：在 8GB 显存下用小 Qwen 文本模型跑通 PEFT + QLoRA 训练闭环。
-4. [AutoAWQ INT4 量化](./04_awq_quantization.md)：理解量化流程，并在远程 GPU 上量化自有模型。
-5. [vLLM + FastAPI 部署](./05_vllm_fastapi_deploy.md)：用 vLLM 做底层推理引擎，再由 FastAPI 统一封装业务接口。
-6. [远程 GPU / SSH 实战](./06_remote_gpu_ssh.md)：租用算力、SSH 登录、端口转发、后台运行和常见排错。
-7. [项目汇报与简历描述](./07_report_and_resume.md)：整理项目亮点、技术路线、答辩话术和简历表达。
+1. [环境准备](./01_environment.md)：从开发机检查、虚拟环境、依赖安装开始。
+2. [本地 AWQ 推理服务](./02_local_inference.md)：先把 API 服务跑起来，确认请求和流式返回都通。
+3. [QLoRA 轻量微调](./03_qlora_finetune.md)：用小模型跑通训练闭环，理解 LoRA Adapter 的价值。
+4. [AutoAWQ INT4 量化](./04_awq_quantization.md)：理解量化流程，以及为什么学习阶段可以先用现成 AWQ 权重。
+5. [vLLM + FastAPI 部署](./05_vllm_fastapi_deploy.md)：把推理引擎和业务 API 分层。
+6. [远程 GPU / SSH 实战](./06_remote_gpu_ssh.md)：把重计算部分迁移到租用算力。
+7. [项目汇报与简历描述](./07_report_and_resume.md)：把项目讲清楚，而不是只堆技术名词。
 
-## 推荐执行路径
+## 我推荐的执行路线
 
-本地 8GB 显存机器：
+本地开发机先做这些：
 
 ```powershell
 python -m venv .venv
@@ -27,7 +27,7 @@ pip install -e .
 powershell -ExecutionPolicy Bypass -File scripts/start_api.ps1
 ```
 
-远程 Linux GPU 机器：
+等本地接口、训练脚本和数据格式都理解后，再上远程 GPU：
 
 ```bash
 python3 -m venv .venv
@@ -38,29 +38,24 @@ pip install -e .
 bash scripts/serve_vllm.sh
 ```
 
-## 8GB 显存边界
+## 为什么这个项目有学习意义
 
-8GB 显存适合：
+很多大模型教程会直接假设你有一张很强的卡，然后把模型拉下来跑。这样确实快，但容易跳过几个关键问题：
 
-- 运行 `Qwen/Qwen2.5-VL-3B-Instruct-AWQ` 的轻量推理演示。
-- 用 `Qwen/Qwen2.5-0.5B-Instruct` 或 `Qwen/Qwen2.5-1.5B-Instruct` 跑 QLoRA 文本微调闭环。
-- 展示 FastAPI + SSE 服务封装和客户端接入。
+- 模型为什么需要量化？
+- 为什么微调时不直接更新全部参数？
+- 为什么推理服务要和业务 API 解耦？
+- 为什么流式输出比一次性返回更适合聊天场景？
+- 为什么本地开发和远程部署要保持同一套接口？
 
-8GB 显存不建议：
+这个项目的学习价值就在这里：用普通硬件把工程链路拆开，一块一块理解。
 
-- 直接 FP16 加载 Qwen2.5-VL-3B/7B。
-- 本地训练多模态 Qwen-VL LoRA。
-- 大上下文、多图片、多并发压测。
+## 最终你应该能讲清楚
 
-## 项目最终验收标准
-
-完成后你应该能展示：
-
-- 一个可启动的 `/health` 接口。
-- 一个兼容 OpenAI 风格的 `/v1/chat/completions` 接口。
-- 一个支持 `stream=true` 的 SSE 流式响应。
-- 一个 QLoRA 训练脚本和 LoRA Adapter 输出目录。
-- 一个 AutoAWQ 量化脚本。
-- 一套远程 vLLM 部署方案。
-- 一份可以写进简历和项目报告的技术说明。
+- 我为什么选择 AWQ 而不是直接 FP16 推理。
+- 我为什么选择 QLoRA 而不是全量微调。
+- 本地 Transformers 后端和远程 vLLM 后端分别适合什么阶段。
+- FastAPI 在项目里不是摆设，而是稳定业务接口的边界。
+- SSE 流式返回如何改善生成式接口的体验。
+- 如果以后有 24GB 或更强 GPU，哪些部分可以继续升级。
 

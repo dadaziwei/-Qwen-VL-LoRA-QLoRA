@@ -16,7 +16,7 @@ app = FastAPI(title="Edge Qwen API", version="0.1.0")
 
 @lru_cache(maxsize=1)
 def get_engine() -> ChatEngine:
-    """懒加载推理后端，避免启动时重复占用显存。"""
+    """懒加载推理后端，避免启动时重复加载模型。"""
     config = get_config()
     if config.backend == "openai":
         return OpenAIVLLMEngine(config)

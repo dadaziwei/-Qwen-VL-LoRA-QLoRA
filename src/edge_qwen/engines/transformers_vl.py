@@ -13,7 +13,7 @@ from edge_qwen.schemas import ChatCompletionRequest
 
 
 class TransformersVLEngine(ChatEngine):
-    """本地 Qwen-VL 推理后端，适合 AWQ 小模型和低显存演示。"""
+    """本地 Qwen-VL 推理后端，适合普通开发机上的 AWQ 模型验证。"""
 
     def __init__(self, config: ServiceConfig):
         self.config = config

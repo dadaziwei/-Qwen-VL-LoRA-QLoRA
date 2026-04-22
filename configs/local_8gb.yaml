@@ -1,7 +1,7 @@
-# 8GB 显存本地训练配置：优先跑通 QLoRA 文本 SFT 闭环。
+# 8GB 显卡本地训练配置：优先跑通 QLoRA 文本 SFT 闭环。
 model_name: Qwen/Qwen2.5-0.5B-Instruct
 output_dir: outputs/qwen-lora-local
-# 低显存下先限制上下文长度，避免 KV/激活占用过高。
+# 普通开发机先限制上下文长度，让训练反馈更稳定。
 max_seq_length: 512
 per_device_train_batch_size: 1
 gradient_accumulation_steps: 8
@@ -10,7 +10,7 @@ learning_rate: 0.0002
 logging_steps: 5
 save_steps: 50
 lora:
-  # rank 越大表达能力越强，但显存和训练时间也会上升。
+  # rank 越大表达能力越强，但训练开销和等待时间也会上升。
   r: 8
   alpha: 16
   dropout: 0.05

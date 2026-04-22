@@ -1,32 +1,39 @@
 # 03 QLoRA 轻量微调
 
-本章目标：用 PEFT + QLoRA 跑通低显存微调闭环，并保存 LoRA Adapter。
+这一章的目标不是训练出一个“最强模型”，而是把 QLoRA 的工程流程跑通。只要你理解了这个流程，后面换更大的模型、更多数据、远程 GPU，本质上都是扩展同一套方法。
 
-## 1. 为什么选择小文本模型做本地训练
+## 1. 为什么本地先选小模型
 
-本地 8GB 显存很难稳定训练 Qwen2.5-VL-3B。为了保证项目能演示“冻结基座模型，只训练 LoRA Adapter”的核心能力，本地训练默认使用：
+我本地训练默认选择：
 
 ```text
 Qwen/Qwen2.5-0.5B-Instruct
 ```
 
-这不会削弱项目逻辑，因为 QLoRA 的训练流程、数据格式、LoRA 保存方式和大模型是一致的。真正多模态训练可以复用配置迁移到远程 GPU。
+原因很朴素：学习阶段最重要的是反馈速度。小模型能让我们快速看到数据如何被 chat template 处理、4bit 如何加载、LoRA Adapter 如何保存。等这条链路顺了，再迁移到 Qwen-VL 多模态训练会踏实很多。
+
+8GB 显卡在这里很有意义。它逼着我们使用 QLoRA，而不是全量微调；也逼着我们理解 `max_seq_length`、batch size、gradient accumulation、LoRA rank 这些参数到底在影响什么。
 
 ## 2. 数据格式
 
-示例文件位于：
+示例数据位于：
 
 ```text
 data/sample_sft.jsonl
 ```
 
-每一行是一条 SFT 样本：
+每一行是一条对话：
 
 ```json
-{"messages":[{"role":"system","content":"你是一个边缘端大模型部署助手。"},{"role":"user","content":"什么是 INT4 权重量化？"},{"role":"assistant","content":"INT4 权重量化是把模型权重从 FP16 等高精度格式压缩到 4 bit 表示，从而显著降低显存占用和存储体积。"}]}
+{"messages":[{"role":"system","content":"你是一个边缘端大模型部署助手。"},{"role":"user","content":"什么是 INT4 权重量化？"},{"role":"assistant","content":"INT4 权重量化是把模型权重从 FP16 等高精度格式压缩到 4 bit 表示，从而降低模型部署成本。"}]}
 ```
 
-你可以替换成自己的业务数据，例如设备说明书问答、接口文档问答、边缘部署排错问答。
+你可以把它替换成自己的领域数据，比如：
+
+- 设备说明书问答。
+- API 文档问答。
+- 部署排错记录。
+- 图像识别任务的文本解释样本。
 
 ## 3. 启动训练
 
@@ -38,29 +45,33 @@ python scripts/train_qlora_sft.py `
   --output-dir outputs/qwen-lora-local
 ```
 
-输出目录只保存 LoRA Adapter 和 tokenizer 文件，不会保存完整基座模型。
+训练完成后，输出目录保存的是 LoRA Adapter，而不是完整基座模型。这正是 PEFT 的好处：小文件、易迁移、易组合。
 
-## 4. 关键参数解释
+## 4. 我关注的几个参数
 
-`configs/local_8gb.yaml` 中最重要的是：
+`configs/local_8gb.yaml` 里这些参数最值得看：
 
-- `max_seq_length: 512`：限制训练上下文，降低显存占用。
-- `per_device_train_batch_size: 1`：单卡小 batch。
-- `gradient_accumulation_steps: 8`：用梯度累积模拟更大 batch。
-- `lora.r: 8`：低 rank，适合小显存。
-- `load_in_4bit: true`：使用 4bit 量化加载基座模型。
-- `bnb_4bit_quant_type: nf4`：QLoRA 常用量化格式。
+- `max_seq_length: 512`：先用较短上下文换来稳定反馈。
+- `per_device_train_batch_size: 1`：单步小 batch，更适合普通开发机。
+- `gradient_accumulation_steps: 8`：用累积梯度模拟更大的有效 batch。
+- `lora.r: 8`：先用较小 rank 观察效果和训练速度。
+- `load_in_4bit: true`：QLoRA 的核心之一，用 4bit 加载基座模型。
+- `bnb_4bit_quant_type: nf4`：QLoRA 常用格式。
 
-## 5. 常见 OOM 处理
+我的建议是一次只改一个参数。否则训练效果变化了，你很难判断原因。
 
-如果显存不足，按顺序降低：
+## 5. 训练不稳时怎么调
 
-1. `max_seq_length` 从 512 降到 384 或 256。
-2. `lora.r` 从 8 降到 4。
-3. 使用更小模型，例如 `Qwen/Qwen2.5-0.5B-Instruct`。
-4. 关闭浏览器、IDE、其他占用 GPU 的程序。
+如果训练过程不顺，我通常按这个顺序排查：
 
-## 6. 迁移到远程多模态训练
+1. 先确认数据格式能被脚本正确读取。
+2. 再把 `max_seq_length` 调小，确认不是上下文太长。
+3. 再把 `lora.r` 调小，观察资源占用变化。
+4. 最后再考虑换模型或迁移到远程 GPU。
+
+这种排查方式比一上来换一堆参数更可靠。
+
+## 6. 迁移到多模态训练
 
 远程配置在：
 
@@ -68,5 +79,5 @@ python scripts/train_qlora_sft.py `
 configs/remote_a10g.yaml
 ```
 
-建议在 24GB 显存以上机器上执行，并把数据换成多模态样本。多模态样本通常需要图片路径、文本 prompt 和 assistant 回答，训练脚本可在当前文本 SFT 脚本基础上扩展 processor 处理逻辑。
+后续做 Qwen-VL LoRA 时，主要增加的是多模态数据处理：图片路径、文本 prompt、assistant 回答，以及 processor 对图片的编码。训练思想仍然是同一套：冻结基座，训练 Adapter。
 
